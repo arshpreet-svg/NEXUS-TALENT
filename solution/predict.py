@@ -38,7 +38,7 @@ def predict(prm=None, use_tags=False, model="dfl"):
     Xf, _ = features.features(P, B, (1 - team).astype(np.int8), segments=HALVES)
     assert names == m["names"]
     if model == "dfl":
-        dl, tl = train_dfl.logits(m["dead"], m["team"], X, Xf)
+        dl, tl = train_dfl.predict_logits(m, X, Xf)
     else:
         dl, tl = train.predict_logits(m["dead"], m["team"], X, Xf)
     labels = decode_all(dl, tl, prm)

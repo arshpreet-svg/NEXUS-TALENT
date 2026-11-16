@@ -91,7 +91,7 @@ def stage1_nested(dh, th, sub, n_jobs=7):
     Cached on disk, keyed by the first-stage config and the feature cache version."""
     import hashlib, pickle
     seqs, mask, ver = dfl.load_all(), train_dfl.atd_ball_mask(), cv_fast.code_version()
-    key = hashlib.md5(json.dumps([dh, th, sub, ver], sort_keys=True).encode()).hexdigest()[:10]
+    key = hashlib.md5(json.dumps([dh, th, sub, ver, "ctx1"], sort_keys=True).encode()).hexdigest()[:10]
     path = os.path.join(ROOT, "cache", "stage1_%s.pkl" % key)
     matches = [q["match"] for q in seqs]
     order = sorted(set(matches))
@@ -100,10 +100,12 @@ def stage1_nested(dh, th, sub, n_jobs=7):
     tr = cv_fast.get_parts(seqs, 0, mask, ver, n_jobs)
     te = cv_fast.get_parts(seqs, 1, mask, ver, n_jobs)
 
+    import stack
+
     def job(m, j):
         excl = {m, j}
         pred = fit_plain([p for p, mm in zip(tr, matches) if mm not in excl], dh, th, sub)
-        return [pred(X, Xf) + (lab,) for (X, Xf, lab, _), mm in zip(te, matches) if mm == j]
+        return [pred(X, Xf) + (lab, stack.context(X, nm)) for (X, Xf, lab, nm), mm in zip(te, matches) if mm == j]
     jobs = [(m, j) for m in order for j in order]
     out = Parallel(n_jobs=n_jobs)(delayed(job)(m, j) for m, j in jobs)
     res = dict(zip(jobs, out))
@@ -112,15 +114,16 @@ def stage1_nested(dh, th, sub, n_jobs=7):
     return order, matches, res
 
 
-def run_stack(dh, th, sub, s2hp, n_jobs=7):
+def run_stack(dh, th, sub, s2hp, ctx=True, n_jobs=7):
     import stack
     order, _, res = stage1_nested(dh, th, sub, n_jobs)
+    cut = 4 if ctx else 3
 
     def fold(m):
-        oof = [s for j in order if j != m for s in res[(m, j)]]
+        oof = [s[:cut] for j in order if j != m for s in res[(m, j)]]
         s2 = stack.Stage2(s2hp).fit(oof)
-        return [s2.predict(dl, tl) + (lab,) for dl, tl, lab in res[(m, m)]]
-    stage1 = [res[(m, m)] for m in order]
+        return [s2.predict(*s[:2], *s[3:cut]) + (s[2],) for s in res[(m, m)]]
+    stage1 = [[s[:3] for s in res[(m, m)]] for m in order]
     stage2 = Parallel(n_jobs=n_jobs)(delayed(fold)(m) for m in order)
     return order, stage1, stage2
 
@@ -135,6 +138,7 @@ if __name__ == "__main__":
     ap.add_argument("--seeds", default="0", help="training degradation seeds, comma separated (ensemble)")
     ap.add_argument("--note", default="")
     ap.add_argument("--no-log", action="store_true")
+    ap.add_argument("--no-ctx", action="store_true", help="stage two without the context features")
     ap.add_argument("--grid", action="store_true", help="decoder grid on the held-out stage-2 logits")
     for k, v in cv_fast.DECODE.items():
         ap.add_argument("--" + k.replace("_", "-"), type=type(v), default=v)
@@ -144,7 +148,7 @@ if __name__ == "__main__":
     t0 = time.time()
 
     if a.mode == "stack":
-        order, s1, s2 = run_stack(dh, th, a.sub, json.loads(a.s2))
+        order, s1, s2 = run_stack(dh, th, a.sub, json.loads(a.s2), ctx=not a.no_ctx)
         print("--- stage 1 (same config, for reference)")
         report(order, s1, "", log=False)
         print("--- stage 2")

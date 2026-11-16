@@ -22,3 +22,17 @@ date,branch,note,temp,lam_team,lam_dead,min_len,spellF1,macroF1,aliveDeadF1,team
 2026-11-16 23:29,hold-labels,"NEW DEFAULT: decoder 0.4/6/25/50, train on raw labels; primary target = 3 s controlled possession [train hold 0.0s | eval hold 3.0s]",0.4,6,25,50,0.6407,0.8654,0.9517,0.8610,0.9892,209,233,0.693;0.553;0.663;0.599;0.684;0.660;0.634,30
 2026-11-17 00:32,track-a-model,track A: baseline reproduction on Windows/py3.14,0.8,3,12,25,0.4685,0.8581,0.9518,0.8568,0.9892,262,437,0.423;0.411;0.501;0.452;0.482;0.523;0.488,159
 2026-11-17 02:25,track-a-model,track A: stage-2 stack (default s2 hp) on baseline stage 1,0.8,3,12,25,0.4754,0.8623,0.9539,0.8606,0.9914,251,437,0.412;0.432;0.492;0.460;0.474;0.539;0.519,379
+date,branch,note,temp,lam_team,lam_dead,min_len,spellF1,macroF1,aliveDeadF1,team_acc,dead_auc,n_pred,n_gt,per_fold_spellF1,seconds
+2026-11-16 22:36,track-c-decoder,"baseline: current main (97 features, depth 5, 250 iter)",0.8,3,12,25,0.4685,0.8581,0.9518,0.8568,0.9892,262,437,0.423;0.411;0.501;0.452;0.482;0.523;0.488,74
+2026-11-16 18:00,track-c-decoder,decoder grid (144 cells) on out-of-fold logits: best 0.470 vs current 0.468 -> params are at the ceiling,0.8,3,12,25,0.4700,0.8580,,,,264,437,,
+2026-11-16 18:00,track-c-decoder,"HSMM duration-aware decoder (durations fitted on other matches), best of 36 cells: temp .8 w_dur .5 w_trans 1 min 25 -> fails the +0.01 gate",0.8,3,12,25,0.4670,0.8570,,,,269,437,,
+2026-11-17 00:32,track-a-model,track A: baseline reproduction on Windows/py3.14,0.8,3,12,25,0.4685,0.8581,0.9518,0.8568,0.9892,262,437,0.423;0.411;0.501;0.452;0.482;0.523;0.488,159
+2026-11-17 02:25,track-a-model,track A: stage-2 stack (default s2 hp) on baseline stage 1,0.8,3,12,25,0.4754,0.8623,0.9539,0.8606,0.9914,251,437,0.412;0.432;0.492;0.460;0.474;0.539;0.519,379
+2026-11-17 02:30,track-a-model,A1 team model bigger: depth7 iter500 lr.05 leaf100,0.8,3,12,25,0.4716,0.8589,0.9520,0.8601,0.9892,268,437,0.424;0.412;0.493;0.465;0.478;0.550;0.479,123
+2026-11-17 02:33,track-a-model,A2 team model big+reg: depth8 iter800 lr.03 leaf200 l2 3,0.8,3,12,25,0.4720,0.8595,0.9521,0.8600,0.9892,270,437,0.430;0.412;0.502;0.463;0.464;0.544;0.489,163
+2026-11-17 02:34,track-a-model,A3 = A1 + dead depth4 iter300,0.8,3,12,25,0.4704,0.8588,0.9519,0.8601,0.9889,268,437,0.427;0.411;0.495;0.462;0.478;0.546;0.474,93
+2026-11-17 02:36,track-a-model,A4 team model smaller: depth4 iter400 leaf200,0.8,3,12,25,0.4632,0.8578,0.9521,0.8559,0.9892,256,437,0.429;0.397;0.487;0.450;0.471;0.517;0.492,67
+2026-11-17 02:38,track-a-model,A5 denser sampling SUB=2,0.8,3,12,25,0.4627,0.8569,0.9517,0.8557,0.9891,261,437,0.432;0.409;0.482;0.441;0.466;0.524;0.486,129
+2026-11-17 02:42,track-a-model,"A6 ensemble of 3 degradation seeds (0,2,3)",0.8,3,12,25,0.4625,0.8599,0.9540,0.8578,0.9901,253,437,0.422;0.408;0.474;0.446;0.484;0.524;0.479,240
+2026-11-17 02:49,track-a-model,S1 stack+context on baseline stage 1,0.8,3,12,25,0.4757,0.8628,0.9546,0.8610,0.9917,251,437,0.408;0.427;0.500;0.468;0.475;0.532;0.520,382
+2026-11-17 03:04,track-a-model,S2 stack+context on A2 stage 1,0.8,3,12,25,0.4881,0.8641,0.9541,0.8646,0.9917,259,437,0.432;0.442;0.499;0.476;0.489;0.551;0.528,851

@@ -16,6 +16,9 @@ import numpy as np
 from scipy.ndimage import maximum_filter1d, minimum_filter1d
 from sklearn.ensemble import HistGradientBoostingClassifier
 
+# Team-neutral first-stage features passed through as context: how much to trust the team evidence depends on
+# whether the ball is tracked and how play is moving. All are unchanged by swapping the teams.
+CONTEXT = ("obs", "obs_m3", "obs_m15", "since_ball", "until_ball", "pspd_m3", "pstill_m3", "bspeed_m1", "dmin")
 WINDOWS = (25, 75, 150, 375)          # half-widths in frames at 25 fps: 1, 3, 6, 15 s
 SUB = 5
 HP = dict(max_iter=200, learning_rate=0.05, max_depth=4, min_samples_leaf=200, l2_regularization=1.0, random_state=0)
@@ -33,8 +36,14 @@ def _win_mean(c, n, lo, hi):
     return ((c[b] - c[a]) / np.maximum(b - a, 1)).astype(np.float32)
 
 
-def features(dl, tl):
-    """Stage-two features for one sequence (len n). Returns (n, k) float32 and names."""
+def context(X, names):
+    """The CONTEXT columns of a first-stage feature matrix."""
+    names = list(names)
+    return X[:, [names.index(c) for c in CONTEXT]].astype(np.float32)
+
+
+def features(dl, tl, C=None):
+    """Stage-two features for one sequence (len n); C = context(X, names) or None. Returns (n, k) float32, names."""
     n = len(dl)
     cd, ct = _cs(dl), _cs(tl)
     cols, names = [dl.astype(np.float32), tl.astype(np.float32)], ["dl", "tl"]
@@ -46,7 +55,10 @@ def features(dl, tl):
                  minimum_filter1d(tl, 2 * w + 1).astype(np.float32),
                  maximum_filter1d(dl, 2 * w + 1).astype(np.float32)]
         names += ["%s_%d" % (k, w) for k in ("tc", "tp", "tf", "tslope", "dc", "dp", "df", "dslope", "tmax", "tmin", "dmax")]
-    return np.stack(cols, 1), names
+    F = np.stack(cols, 1)
+    if C is not None:
+        F, names = np.concatenate([F, C], 1), names + list(CONTEXT)
+    return F, names
 
 
 def _clf(hp):
@@ -63,11 +75,13 @@ class Stage2:
         self.hp, self.sub = {**HP, **(hp or {})}, sub
 
     def fit(self, oof):
-        """oof: list of (dl, tl, lab) per sequence, dl/tl out-of-fold first-stage logits."""
+        """oof: list of (dl, tl, lab[, C]) per sequence, dl/tl out-of-fold first-stage logits, C context."""
         Xd, yd, Xt, yt = [], [], [], []
-        for dl, tl, lab in oof:
-            F, _ = features(dl, tl)
-            Ff, _ = features(dl, -tl)
+        for item in oof:
+            dl, tl, lab = item[:3]
+            C = item[3] if len(item) > 3 else None
+            F, _ = features(dl, tl, C)
+            Ff, _ = features(dl, -tl, C)
             idx = np.flatnonzero(lab >= 0)[::self.sub]
             y = lab[idx]
             Xd += [F[idx], Ff[idx]]; yd += [(y == 2).astype(int)] * 2
@@ -78,8 +92,8 @@ class Stage2:
         self.mt = _clf(self.hp).fit(np.concatenate(Xt), np.concatenate(yt))
         return self
 
-    def predict(self, dl, tl):
-        F, _ = features(dl, tl)
-        Ff, _ = features(dl, -tl)
+    def predict(self, dl, tl, C=None):
+        F, _ = features(dl, tl, C)
+        Ff, _ = features(dl, -tl, C)
         return (0.5 * (_logit(self.md, F) + _logit(self.md, Ff)),
                 0.5 * (_logit(self.mt, F) - _logit(self.mt, Ff)))
