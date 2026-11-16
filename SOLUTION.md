@@ -11,7 +11,7 @@ constant comes from the provided match.
 |---|---|
 | Training data | DFL open Bundesliga data, 7 matches (14 halves), CC BY 4.0 |
 | Models | gradient-boosted trees (scikit-learn `HistGradientBoostingClassifier`) |
-| Decoder | 3-state Viterbi over H / A / D |
+| Decoder | 3-state Viterbi over H / A / D (smooth: two-second minimum run) |
 | Held-out validation | leave-one-match-out over the 7 matches, scored with the official metric code |
 | Output | 199,319 rows; labels only inside the two published halves, `X` elsewhere |
 
@@ -37,9 +37,10 @@ constant comes from the provided match.
    team orientations and its prediction is symmetrised, `½[logit(x) − logit(x with the teams swapped)]`, so it
    has no home bias.
 3. **Decoder** (`solution/decode.py`): a 3-state Viterbi over the log-probabilities (emission temperature
-   0.8, switch cost 3 for H↔A and 12 to/from D), then runs shorter than 1 s (25 frames) are absorbed by their
-   neighbours. This is what turns noisy per-frame evidence into possessions with realistic lengths: the
-   nearest-player baseline invents 669 possessions, this system produces 297.
+   0.4, switch cost 6 for H↔A and 25 to/from D), then runs shorter than 2 s (50 frames) are absorbed by their
+   neighbours. This is what turns noisy per-frame evidence into *controlled* possessions: the nearest-player
+   baseline invents 669 possessions, this system produces 216. The strength of this smoothing encodes an
+   assumption about the target — see "Possession definition" below.
 4. **Scope** (`solution/predict.py`): only the half boundaries published in DATA.md (frames 11185–90651 and
    110808–190197) are labelled; every other frame is `X`. No `X` is written inside a half.
 
@@ -64,31 +65,52 @@ All labels come from **other matches**; none from the provided game.
   Label shares: H 29.5 %, A 26.0 %, D 44.5 %.
 * `solution/download_dfl.sh` downloads the files and verifies every MD5 against the figshare manifest.
 
+## Possession definition and the hold study
+DFL flips its possession flag on **any touch**, so 44 % of its possessions last under 3 s and 437 occur per match.
+CHALLENGE.md asks for *controlled* possession: "a simple touch … a deflection … an aerial duel" do not count, and a
+proxy is "a player keeps the ball for a few seconds". We therefore score validation against DFL labels in which
+H/A runs shorter than a **hold** are merged into their live neighbour (never into a dead stretch;
+`dfl.apply_hold`), and we treat the hold as an unknown in the range 2–4 s rather than a tuned constant:
+
+| spellF1, decoder 0.4 / 6 / 25 / 50, trained on raw DFL labels | target hold 2 s | 3 s | 4 s | raw (0 s) |
+|---|---|---|---|---|
+| mean of 7 held-out matches | 0.593 | **0.641** | 0.645 | 0.442 |
+| previous decoder (0.8 / 3 / 12 / 25) | 0.575 | 0.592 | 0.581 | 0.468 |
+
+* The smoother decoder wins on every target of 2 s or coarser and loses 0.026 on the raw touch-level target, which the
+  rules text excludes.
+* Training on hold-merged labels did **not** help once the decoder was re-tuned: mean spellF1 over the 2/3/4 s
+  targets was 0.626 (raw labels), 0.616 (2 s), 0.615 (3 s). We therefore train on the raw DFL labels.
+* The 3 s target is our primary yardstick (`solution/cv_fast.py`, default); mean possession length at a 3 s hold is
+  13.8 s, consistent with the organisers' published 14.2 s, which was **not** used to choose it.
+
 ## Validation (the provided game's labels are never used for training or selection)
 * **Leave-one-match-out**: train on six matches, test on the seventh (degraded with a different random seed),
-  seven folds, scored with the official `evaluation/possession_metrics.py`. All model and decoder choices were
-  made on this validation (`solution/cv_fast.py`, one row per experiment in `experiments/log.csv`).
+  seven folds, scored with the official `evaluation/possession_metrics.py` against the 3 s controlled-possession
+  target. All model and decoder choices were made on this validation (`solution/cv_fast.py`; one row per experiment
+  in `experiments/log.csv`).
 
-  | mean of 7 held-out matches | value |
-  |---|---|
-  | spellF1 | 0.468 |
-  | macroF1 | 0.858 |
-  | alive / dead F1 | 0.952 |
-  | dead-ball AUC | 0.989 |
-  | team accuracy on live frames | 0.857 |
-  | predicted vs true possessions per match | 262 vs 437 |
+  | mean of 7 held-out matches | 3 s target | raw DFL labels |
+  |---|---|---|
+  | spellF1 | 0.641 | 0.442 |
+  | macroF1 | 0.865 | 0.857 |
+  | alive / dead F1 | 0.952 | 0.952 |
+  | dead-ball AUC | 0.989 | 0.989 |
+  | team accuracy on live frames | 0.861 | 0.861 |
+  | predicted vs true possessions per match | 209 vs 233 | 209 vs 437 |
 
-  Progression on the same validation: base features 0.369 → + team-shape features 0.444 → + field-position
-  features about 0.46–0.47 spellF1 (each step improved every fold).
-* **Decoder sensitivity**: a 144-cell grid over temperature, switch costs and minimum run gives 0.442–0.470; the
-  chosen setting (0.468) is within 0.002 of the best, so it is not sensitive.
+  Progression of the model (raw-label yardstick, same decoder): base features 0.369 → + team-shape features 0.444 →
+  + field-position features about 0.47 spellF1 (each step improved every fold).
+* **Decoder sensitivity**: a 144-cell grid on the 3 s target ranges 0.55–0.64; neighbouring settings
+  (team cost 6–10, dead cost 12–25, run 1–3 s) are within 0.01, so the choice is not sensitive.
 * **Public 5-minute window** — used only to catch alignment / orientation bugs and, early on, to test two
   assumptions (see "Tried and dropped"); no model or parameter was selected on it. For the submitted file:
-  macroF1 0.865, spellF1 0.516, 14 predicted vs 17 true possessions, 77 % of true dead frames recovered
+  macroF1 0.892, spellF1 0.622, 10 predicted vs 17 true possessions, 81 % of true dead frames recovered
   (floor baseline on the same window: 0.621 / 0.326). With 17 possessions one possession moves spellF1 by about
-  0.06, so this figure ranks nothing (EVALUATION.md).
-* **Full match, no labels needed**: H 53,457 / A 32,305 / D 73,095 graded frames (D = 46 %, in line with real effective
-  playing time and the 44.5 % in the training matches); 297 possessions of mean 11.6 s.
+  0.06, so this figure ranks nothing (EVALUATION.md). The under-count (10 vs 17) is a warning that the real labels
+  keep some very short possessions that this smoother decoder merges.
+* **Full match, no labels needed**: H 53,389 / A 32,802 / D 72,666 graded frames (D = 46 %, in line with real effective
+  playing time and the 44.5 % in the training matches); 216 possessions of mean 16.0 s.
 
 ## Assets used and dropped
 * **Used**: tactical ATD (`*_atd.txt`; `*_atd.xml` only to know each track slot's team).
@@ -105,8 +127,12 @@ All labels come from **other matches**; none from the provided game.
   * *EM prior-shift correction* for the dead-ball model: it estimated 3 % dead among ball-visible frames, contradicted by
     the public window; removed.
   * *Hidden semi-Markov decoder* with durations fitted on other matches' labels (`decode.decode_span_hsmm`): 0.467
-    vs 0.468 for Viterbi — no gain, unused.
+    vs 0.468 for Viterbi (raw-label yardstick) — no gain, unused.
+  * *Training on hold-merged labels* (see the hold study): no gain once the decoder was re-tuned.
 * **Not used**: the videos, the homography, the broadcast recording.
+* **Other participants' public repositories** were read for ideas (how the ground truth behaves, label granularity).
+  No code, model, prediction or label from them is used anywhere in this pipeline, and every number above was
+  measured by us on DFL data.
 
 ## Possession rules implemented
 Possession is the team the control model assigns the ball to, held by the decoder until sustained evidence (the
@@ -116,10 +142,11 @@ the previous team; a hand-over needs several consecutive frames of evidence. Dea
 handled by a special rule; a possession begins when the decoder leaves a dead stretch.
 
 ## Limitations
-* **Short possessions are not recovered.** In the DFL matches 44 % of possessions last under 3 s (touch-level
-  flips) and only 1–14 % of them are matched; possessions over 15 s are matched 88 % of the time. DFL's possession
-  definition is finer than a "controlled possession" reading, so validation spellF1 on DFL has a low ceiling that is
-  partly a label-granularity artefact. The organisers' ground truth may differ in granularity from DFL's.
+* **Short possessions are merged away.** In the DFL matches 44 % of possessions last under 3 s (touch-level flips)
+  and almost none are recovered; possessions over 15 s are matched 88 % of the time. Our decoder is tuned for a
+  controlled-possession target of 2–4 s; if the organisers' labels keep many shorter possessions (the public window
+  has a few under 1.5 s, and we predict 10 of its 17 possessions) this costs recall. On a raw touch-level target the
+  same decoder scores 0.026 lower than the previous one.
 * **Team confusion**: home and away are confused on about 13 % of live frames; this is the largest remaining error,
   concentrated in stretches without the ball.
 * **Label-definition gap**: DFL's flags follow the same two-field convention the organisers describe, but we could
@@ -136,7 +163,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-solution.txt
 ./make_submission.sh submission.csv      # downloads DFL (verified), trains, predicts, validates
 ```
 * Training takes a few minutes; prediction a few seconds. The pipeline is deterministic: two from-scratch runs
-  (caches and models deleted) gave a byte-identical file (MD5 `50d61d83ee15074347884f1d2058f35a`). Python 3.15.0,
+  (caches and models deleted) gave a byte-identical file (MD5 `6385d9a84b69b4be3e085ab9c22d4b77`). Python 3.15.0,
   pinned versions in `requirements-solution.txt`.
 * Validation: `python solution/cv_fast.py --note "..."` (about 30 s with a warm cache). Tests:
   `pip install -r requirements-dev.txt && python -m pytest tests -q`.

@@ -1,5 +1,12 @@
 # Experiment notes (Track C)
 
+> **NEW YARDSTICK (read this first).** `cv_fast.py` now scores against a *controlled-possession* target by default:
+> DFL labels with H/A runs shorter than 3 s merged into their live neighbour (`dfl.apply_hold`); the raw-DFL score is
+> printed second. Numbers in `experiments/log.csv` carry a `[train hold | eval hold]` tag: rows tagged `eval hold 0.0s`
+> or without a tag use the old raw target and are NOT comparable with `eval hold 3.0s` rows.
+> Current main: decoder 0.4 / 6 / 25 / 50, trained on raw labels -> **spellF1 0.641 (3 s target), 0.442 (raw)**,
+> macroF1 0.865, team accuracy 0.861.
+
 Yardstick: `python solution/cv_fast.py --note "..."` (leave-one-match-out on the 7 DFL matches; ~30 s with a warm
 feature cache, ~70 s cold). Each run appends a row to `experiments/log.csv`. Gate for accepting a change: mean spellF1
 +0.01, macroF1 not lower, at most two folds worse.
@@ -33,3 +40,16 @@ True-possession recall at IoU 0.5 by true duration:
 * Track A/B: the team-control model (H vs A confusion) is the main fixable error. Ball-missing stretches are where it is weakest.
 * Be careful not to over-optimise DFL spellF1 by chasing sub-3 s flips: the organisers' ground truth may not contain them.
   Prefer changes that raise macroF1 / team accuracy and long-possession recall.
+
+## Hold study (label granularity) - 16 Nov
+Why: DFL flips possession on any touch (437 possessions/match, 44% under 3 s); the challenge defines *controlled*
+possession ("a player keeps the ball for a few seconds"; touches / deflections / aerial duels do not count).
+* spellF1 by target hold with the OLD decoder (0.8/3/12/25), model trained on raw labels: raw 0.468, 2 s 0.575, 3 s 0.592, 4 s 0.581.
+* Re-tuning the decoder for coarse targets is worth far more than relabelling: 0.4/6/25/50 gives 0.593 / 0.641 / 0.645 on
+  2 / 3 / 4 s and 0.442 on raw (-0.026). Neighbouring settings are within 0.01.
+* Training on hold-merged labels does not help once the decoder is re-tuned: mean over the 2/3/4 s targets =
+  0.626 (raw labels) vs 0.616 (2 s) vs 0.615 (3 s). Keep training on raw labels.
+* Caveat: on the public window the new file predicts 10 of 17 possessions (the real labels keep a few < 1.5 s). The
+  2-4 s target range is an assumption from the challenge text, not a measurement; do not tune it on the public window.
+* Keeper-slot swap (reported by other participants: tracker puts the home keeper's slot on the away keeper in runs) is
+  NOT yet checked on our tracking; a label-free data fix worth trying (Track B).

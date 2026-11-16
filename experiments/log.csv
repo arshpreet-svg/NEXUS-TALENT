@@ -2,3 +2,21 @@ date,branch,note,temp,lam_team,lam_dead,min_len,spellF1,macroF1,aliveDeadF1,team
 2026-11-16 22:36,track-c-decoder,"baseline: current main (97 features, depth 5, 250 iter)",0.8,3,12,25,0.4685,0.8581,0.9518,0.8568,0.9892,262,437,0.423;0.411;0.501;0.452;0.482;0.523;0.488,74
 2026-11-16 18:00,track-c-decoder,decoder grid (144 cells) on out-of-fold logits: best 0.470 vs current 0.468 -> params are at the ceiling,0.8,3,12,25,0.4700,0.8580,,,,264,437,,
 2026-11-16 18:00,track-c-decoder,"HSMM duration-aware decoder (durations fitted on other matches), best of 36 cells: temp .8 w_dur .5 w_trans 1 min 25 -> fails the +0.01 gate",0.8,3,12,25,0.4670,0.8570,,,,269,437,,
+2026-11-16 23:16,hold-labels,hold robustness matrix [train hold 0.0s | eval hold 2.0s],0.8,3,12,25,0.5751,0.8628,0.9518,0.8621,0.9892,262,281,0.578;0.526;0.596;0.556;0.634;0.558;0.578,
+2026-11-16 23:17,hold-labels,hold robustness matrix [train hold 0.0s | eval hold 3.0s],0.8,3,12,25,0.5918,0.8632,0.9518,0.8610,0.9892,262,233,0.631;0.521;0.619;0.553;0.640;0.579;0.599,
+2026-11-16 23:17,hold-labels,hold robustness matrix [train hold 0.0s | eval hold 4.0s],0.8,3,12,25,0.5810,0.8611,0.9518,0.8579,0.9892,262,205,0.626;0.501;0.611;0.547;0.629;0.575;0.578,
+2026-11-16 23:17,hold-labels,hold robustness matrix [train hold 0.0s | eval hold 0.0s],0.8,3,12,25,0.4685,0.8581,0.9518,0.8568,0.9892,262,437,0.423;0.411;0.501;0.452;0.482;0.523;0.488,36
+2026-11-16 23:17,hold-labels,hold robustness matrix [train hold 2.0s | eval hold 2.0s],0.8,3,12,25,0.5703,0.8611,0.9520,0.8612,0.9892,246,281,0.595;0.517;0.587;0.556;0.610;0.573;0.554,
+2026-11-16 23:17,hold-labels,hold robustness matrix [train hold 2.0s | eval hold 3.0s],0.8,3,12,25,0.6032,0.8630,0.9520,0.8627,0.9892,246,233,0.646;0.521;0.649;0.573;0.631;0.601;0.601,
+2026-11-16 23:17,hold-labels,hold robustness matrix [train hold 2.0s | eval hold 4.0s],0.8,3,12,25,0.5971,0.8615,0.9520,0.8600,0.9892,246,205,0.638;0.511;0.648;0.567;0.621;0.602;0.593,
+2026-11-16 23:17,hold-labels,hold robustness matrix [train hold 2.0s | eval hold 0.0s],0.8,3,12,25,0.4443,0.8546,0.9520,0.8523,0.9892,246,437,0.424;0.388;0.459;0.435;0.452;0.495;0.457,34
+2026-11-16 23:18,hold-labels,hold robustness matrix [train hold 3.0s | eval hold 2.0s],0.8,3,12,25,0.5579,0.8588,0.9523,0.8589,0.9892,231,281,0.577;0.496;0.566;0.553;0.604;0.577;0.532,
+2026-11-16 23:18,hold-labels,hold robustness matrix [train hold 3.0s | eval hold 3.0s],0.8,3,12,25,0.6036,0.8618,0.9523,0.8615,0.9892,231,233,0.635;0.513;0.649;0.588;0.630;0.625;0.585,
+2026-11-16 23:18,hold-labels,hold robustness matrix [train hold 3.0s | eval hold 4.0s],0.8,3,12,25,0.6034,0.8607,0.9523,0.8598,0.9892,231,205,0.630;0.508;0.653;0.591;0.621;0.627;0.595,
+2026-11-16 23:18,hold-labels,hold robustness matrix [train hold 3.0s | eval hold 0.0s],0.8,3,12,25,0.4264,0.8520,0.9523,0.8490,0.9892,231,437,0.405;0.375;0.432;0.425;0.442;0.470;0.436,35
+2026-11-16 23:18,hold-labels,hold robustness matrix [train hold 4.0s | eval hold 2.0s],0.8,3,12,25,0.5366,0.8539,0.9519,0.8518,0.9892,217,281,0.594;0.457;0.552;0.504;0.576;0.551;0.523,
+2026-11-16 23:18,hold-labels,hold robustness matrix [train hold 4.0s | eval hold 3.0s],0.8,3,12,25,0.5892,0.8580,0.9519,0.8566,0.9892,217,233,0.654;0.481;0.625;0.551;0.616;0.606;0.591,
+2026-11-16 23:18,hold-labels,hold robustness matrix [train hold 4.0s | eval hold 4.0s],0.8,3,12,25,0.6007,0.8591,0.9519,0.8574,0.9892,217,205,0.650;0.505;0.650;0.558;0.619;0.616;0.606,
+2026-11-16 23:18,hold-labels,hold robustness matrix [train hold 4.0s | eval hold 0.0s],0.8,3,12,25,0.4010,0.8472,0.9519,0.8422,0.9892,217,437,0.395;0.338;0.410;0.385;0.411;0.443;0.424,35
+2026-11-16 23:29,hold-labels,"NEW DEFAULT: decoder 0.4/6/25/50, train on raw labels; primary target = 3 s controlled possession [train hold 0.0s | eval hold 0.0s]",0.4,6,25,50,0.4418,0.8569,0.9517,0.8568,0.9892,209,437,0.405;0.383;0.439;0.431;0.466;0.507;0.462,
+2026-11-16 23:29,hold-labels,"NEW DEFAULT: decoder 0.4/6/25/50, train on raw labels; primary target = 3 s controlled possession [train hold 0.0s | eval hold 3.0s]",0.4,6,25,50,0.6407,0.8654,0.9517,0.8610,0.9892,209,233,0.693;0.553;0.663;0.599;0.684;0.660;0.634,30

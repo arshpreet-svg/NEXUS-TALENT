@@ -15,7 +15,7 @@ import data, decode, features, tags, train, train_dfl  # noqa: E402
 
 HALVES = [(11185, 90651), (110808, 190197)]    # published in DATA.md; everything else is X
 PARAMS_METRICA = dict(temp=0.4, lam_team=3.0, lam_dead=10.0, min_len=50)   # chosen by leave-one-game-out CV (cv.py)
-PARAMS_DFL = dict(temp=0.8, lam_team=3.0, lam_dead=12.0, min_len=25)        # chosen by leave-one-match-out CV (train_dfl.py cv)
+PARAMS_DFL = dict(temp=0.4, lam_team=6.0, lam_dead=25.0, min_len=50)        # chosen by leave-one-match-out CV on 2-4 s controlled-possession targets (cv_fast.py)
 PARAMS = PARAMS_DFL
 MODELS = {"dfl": train_dfl.MODEL_PATH, "metrica": train.MODEL_PATH}
 

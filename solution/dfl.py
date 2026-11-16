@@ -89,7 +89,40 @@ def labels(d):
     return lab
 
 
-def load_all(refresh=False):
+def apply_hold(lab, hold_frames):
+    """Translate touch-level possession labels into 'controlled' possession.
+
+    DFL flips possession on any touch; the challenge asks for controlled possession ("a player keeps the ball
+    for a few seconds"), so very short flips are not possessions. Repeatedly take the SHORTEST H/A run that is
+    below `hold_frames` and give it to the longer of its live (H/A) neighbours. A short run is never absorbed
+    into a dead stretch, and one with no live neighbour (between two dead stretches) is left alone.
+    Unknown (-1) frames are skipped and stay -1.
+    """
+    if not hold_frames:
+        return lab
+    out = lab.copy()
+    idx = np.flatnonzero(out >= 0)
+    w = out[idx].copy()
+    while True:
+        ch = np.flatnonzero(np.diff(w)) + 1
+        s = np.concatenate(([0], ch))
+        e = np.concatenate((ch, [len(w)]))
+        v = w[s]
+        length = e - s
+        best = None
+        for i in np.flatnonzero((v < 2) & (length < hold_frames)):
+            nb = [k for k in (i - 1, i + 1) if 0 <= k < len(s) and v[k] < 2]
+            if nb and (best is None or length[i] < best[0]):
+                best = (length[i], i, max(nb, key=lambda k: length[k]))
+        if best is None:
+            break
+        _, i, k = best
+        w[s[i]:e[i]] = v[k]
+    out[idx] = w
+    return out
+
+
+def load_all(refresh=False, hold_s=0.0):
     """List of sequences (one per half): dict(P, B, team, lab, match, half)."""
     os.makedirs(CACHE, exist_ok=True)
     seqs = []
@@ -104,4 +137,6 @@ def load_all(refresh=False):
                  for h, d in sorted(halves.items())]
         np.savez_compressed(f, seqs=np.array(these, dtype=object))
         seqs.extend(these)
+    if hold_s:
+        seqs = [dict(q, lab=apply_hold(q["lab"], int(round(hold_s * 25)))) for q in seqs]
     return seqs
