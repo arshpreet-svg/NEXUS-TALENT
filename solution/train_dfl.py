@@ -22,6 +22,9 @@ MODEL_PATH = os.path.join(ROOT, "models", "gbm_dfl.joblib")
 SUB = 5
 # Team-control model capacity (Track A, experiments/log.csv "A2"): deeper, more, slower, more regularised trees.
 # The dead-ball model keeps the default capacity (more did not help).
+# The second stage learns the controlled-possession target directly: its training labels have H/A runs shorter than
+# 3 s merged into their live neighbour (dfl.apply_hold, the team's primary validation target). Stage one stays on raw labels.
+STAGE2_HOLD_S = 3.0
 TEAM_HP = dict(max_depth=8, max_iter=800, learning_rate=0.03, min_samples_leaf=200, l2_regularization=3.0)
 JIT_BALL, JIT_PLAYER = 0.8, 0.3
 HALVES = [(11185, 90651), (110808, 190197)]
@@ -94,7 +97,8 @@ def fit_all(parts, oof_parts, match_of_part, n_jobs=7):
                 for (X, Xf, lab, nm), mm in zip(oof_parts, match_of_part) if mm == m]
     res = Parallel(n_jobs=n_jobs)(delayed(oof)(m) for m in order)
     md, mt, names = fit(parts)
-    s2 = stack.Stage2().fit([s for r in res for s in r])
+    h = int(round(STAGE2_HOLD_S * 25))
+    s2 = stack.Stage2().fit([(dl, tl, dfl.apply_hold(lab, h), C) for r in res for dl, tl, lab, C in r])
     return {"dead": md, "team": mt, "stage2": s2, "names": names}
 
 

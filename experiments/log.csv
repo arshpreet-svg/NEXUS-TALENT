@@ -36,3 +36,15 @@ date,branch,note,temp,lam_team,lam_dead,min_len,spellF1,macroF1,aliveDeadF1,team
 2026-11-17 02:42,track-a-model,"A6 ensemble of 3 degradation seeds (0,2,3)",0.8,3,12,25,0.4625,0.8599,0.9540,0.8578,0.9901,253,437,0.422;0.408;0.474;0.446;0.484;0.524;0.479,240
 2026-11-17 02:49,track-a-model,S1 stack+context on baseline stage 1,0.8,3,12,25,0.4757,0.8628,0.9546,0.8610,0.9917,251,437,0.408;0.427;0.500;0.468;0.475;0.532;0.520,382
 2026-11-17 03:04,track-a-model,S2 stack+context on A2 stage 1,0.8,3,12,25,0.4881,0.8641,0.9541,0.8646,0.9917,259,437,0.432;0.442;0.499;0.476;0.489;0.551;0.528,851
+2026-11-17 03:46,track-a-model,"R1 A2 + stack+context, new decoder, rebased on hold-study main [train hold 0.0s | eval hold 3.0s]",0.4,6,25,50,0.6464,0.8680,0.9525,0.8660,0.9917,218,233,0.690;0.605;0.656;0.620;0.657;0.654;0.643,941
+2026-11-17 03:46,track-a-model,"R1 A2 + stack+context, new decoder, rebased on hold-study main [train hold 0.0s | eval hold 2.0s]",0.4,6,25,50,0.6068,0.8669,0.9525,0.8688,0.9917,218,281,0.614;0.578;0.596;0.590;0.643;0.617;0.609,948
+2026-11-17 03:47,track-a-model,"R1 A2 + stack+context, new decoder, rebased on hold-study main [train hold 0.0s | eval hold 4.0s]",0.4,6,25,50,0.6393,0.8655,0.9525,0.8609,0.9917,218,205,0.683;0.598;0.655;0.612;0.652;0.646;0.630,955
+2026-11-17 03:47,track-a-model,"R1 A2 + stack+context, new decoder, rebased on hold-study main [train hold 0.0s | eval hold 0.0s]",0.4,6,25,50,0.4614,0.8613,0.9525,0.8646,0.9917,218,437,0.407;0.413;0.458;0.459;0.474;0.522;0.497,962
+2026-11-17 03:49,track-a-model,R2 A2 + stack trained on 3s-hold labels [train hold 0.0s | eval hold 3.0s],0.4,6,25,50,0.6511,0.8683,0.9533,0.8699,0.9917,199,233,0.698;0.578;0.662;0.624;0.673;0.667;0.655,56
+2026-11-17 03:50,track-a-model,R2 A2 + stack trained on 3s-hold labels [train hold 0.0s | eval hold 2.0s],0.4,6,25,50,0.5933,0.8652,0.9533,0.8686,0.9917,199,281,0.624;0.539;0.570;0.573;0.635;0.622;0.591,63
+2026-11-17 03:50,track-a-model,R2 A2 + stack trained on 3s-hold labels [train hold 0.0s | eval hold 4.0s],0.4,6,25,50,0.6572,0.8673,0.9533,0.8674,0.9917,199,205,0.697;0.588;0.686;0.628;0.673;0.674;0.654,71
+2026-11-17 03:50,track-a-model,R2 A2 + stack trained on 3s-hold labels [train hold 0.0s | eval hold 0.0s],0.4,6,25,50,0.4336,0.8579,0.9533,0.8600,0.9917,199,437,0.401;0.373;0.420;0.425;0.452;0.493;0.471,78
+2026-11-17 03:51,track-a-model,R2 A2 + stack trained on 2s-hold labels [train hold 0.0s | eval hold 3.0s],0.4,6,25,50,0.6510,0.8691,0.9531,0.8697,0.9917,208,233,0.690;0.602;0.669;0.612;0.677;0.653;0.654,55
+2026-11-17 03:51,track-a-model,R2 A2 + stack trained on 2s-hold labels [train hold 0.0s | eval hold 2.0s],0.4,6,25,50,0.5985,0.8667,0.9531,0.8704,0.9917,208,281,0.616;0.560;0.586;0.567;0.654;0.609;0.596,63
+2026-11-17 03:51,track-a-model,R2 A2 + stack trained on 2s-hold labels [train hold 0.0s | eval hold 4.0s],0.4,6,25,50,0.6523,0.8675,0.9531,0.8657,0.9917,208,205,0.685;0.597;0.677;0.615;0.683;0.660;0.649,70
+2026-11-17 03:51,track-a-model,R2 A2 + stack trained on 2s-hold labels [train hold 0.0s | eval hold 0.0s],0.4,6,25,50,0.4459,0.8604,0.9531,0.8635,0.9917,208,437,0.403;0.396;0.439;0.437;0.473;0.498;0.476,78

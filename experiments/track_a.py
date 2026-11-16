@@ -68,8 +68,9 @@ def run(fit_fn, seeds_train=(0,), seed_test=1, n_jobs=7):
     return order, Parallel(n_jobs=n_jobs)(delayed(fold)(m) for m in order)
 
 
-def report(order, folds, note, prm=cv_fast.DECODE, log=True, t0=None):
-    res = [cv_fast.fold_metrics(f, prm) for f in folds]
+def report(order, folds, note, prm=cv_fast.DECODE, log=True, t0=None, hold=0.0):
+    res = [cv_fast.fold_metrics(f, prm, hold) for f in folds]
+    note = "%s [train hold 0.0s | eval hold %.1fs]" % (note, hold)
     mean = {k: float(np.mean([r[k] for r in res])) for k in res[0]}
     print("%-10s %6s %6s %6s %6s %5s" % ("fold", "spell", "macro", "tacc", "auc", "npred"))
     for m, r in zip(order, res):
@@ -114,13 +115,15 @@ def stage1_nested(dh, th, sub, n_jobs=7):
     return order, matches, res
 
 
-def run_stack(dh, th, sub, s2hp, ctx=True, n_jobs=7):
+def run_stack(dh, th, sub, s2hp, ctx=True, n_jobs=7, s2_hold=0.0):
     import stack
     order, _, res = stage1_nested(dh, th, sub, n_jobs)
     cut = 4 if ctx else 3
 
     def fold(m):
         oof = [s[:cut] for j in order if j != m for s in res[(m, j)]]
+        if s2_hold:     # stage two learns the controlled-possession target directly
+            oof = [(o[0], o[1], dfl.apply_hold(o[2], int(round(s2_hold * 25))),) + tuple(o[3:]) for o in oof]
         s2 = stack.Stage2(s2hp).fit(oof)
         return [s2.predict(*s[:2], *s[3:cut]) + (s[2],) for s in res[(m, m)]]
     stage1 = [[s[:3] for s in res[(m, m)]] for m in order]
@@ -138,6 +141,8 @@ if __name__ == "__main__":
     ap.add_argument("--seeds", default="0", help="training degradation seeds, comma separated (ensemble)")
     ap.add_argument("--note", default="")
     ap.add_argument("--no-log", action="store_true")
+    ap.add_argument("--eval-holds", default="3,2,4,0", help="target holds (s); the first is the primary yardstick")
+    ap.add_argument("--s2-hold", type=float, default=0.0, help="train stage two on hold-merged labels (s)")
     ap.add_argument("--no-ctx", action="store_true", help="stage two without the context features")
     ap.add_argument("--grid", action="store_true", help="decoder grid on the held-out stage-2 logits")
     for k, v in cv_fast.DECODE.items():
@@ -148,15 +153,17 @@ if __name__ == "__main__":
     t0 = time.time()
 
     if a.mode == "stack":
-        order, s1, s2 = run_stack(dh, th, a.sub, json.loads(a.s2), ctx=not a.no_ctx)
-        print("--- stage 1 (same config, for reference)")
-        report(order, s1, "", log=False)
-        print("--- stage 2")
+        order, s1, s2 = run_stack(dh, th, a.sub, json.loads(a.s2), ctx=not a.no_ctx, s2_hold=a.s2_hold)
         prm = dict(temp=a.temp, lam_team=a.lam_team, lam_dead=a.lam_dead, min_len=a.min_len)
-        report(order, s2, a.note or "track A stack s1 dead=%s team=%s sub=%d s2=%s" % (a.dead, a.team, a.sub, a.s2),
-               prm=prm, log=not a.no_log, t0=t0)
+        holds = [float(h) for h in a.eval_holds.split(",")]
+        note = a.note or "track A stack s1 dead=%s team=%s sub=%d s2=%s" % (a.dead, a.team, a.sub, a.s2)
+        for h in holds:
+            print("=== target hold %.1f s --- stage 1 (same config, reference)" % h)
+            report(order, s1, "", prm=prm, log=False, hold=h)
+            print("=== target hold %.1f s --- stage 2" % h)
+            report(order, s2, note, prm=prm, log=not a.no_log, t0=t0, hold=h)
         if a.grid:
-            cv_fast.grid(s2, top=15)
+            cv_fast.grid(s2, top=15, hold_eval=holds[0])
         sys.exit(0)
 
     def fit_fn(trp):
