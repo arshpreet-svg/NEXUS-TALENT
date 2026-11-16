@@ -62,3 +62,10 @@ __pycache__/
 venv/
 env/
 .DS_Store
+cache/
+TEAM_PLAN.pdf
+
+# team-internal / regenerated artefacts
+references/
+models/
+.DS_Store
