@@ -56,3 +56,7 @@ possession ("a player keeps the ball for a few seconds"; touches / deflections /
   keeper's end: a phantom away player in the home box, not a pairwise swap. Blanking those frames (NaN) changes only
   813 of 158,857 graded labels (0.5%, mostly A/H -> D). It cannot be validated (DFL has no such artefact, public window
   too small), so it is NOT applied; submission unchanged.
+
+* Bagging over frame-subsample offsets (3 models per target, offsets 0/1/2 of the every-5th-frame sampling, logits averaged):
+  3 s target spellF1 0.638 vs 0.641 single model, raw target identical (0.442). No gain (neighbouring frames are near
+  duplicates, so the bag adds no diversity); reverted. Stacking and a different model family are still untested.
