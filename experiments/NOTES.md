@@ -51,5 +51,8 @@ possession ("a player keeps the ball for a few seconds"; touches / deflections /
   0.626 (raw labels) vs 0.616 (2 s) vs 0.615 (3 s). Keep training on raw labels.
 * Caveat: on the public window the new file predicts 10 of 17 possessions (the real labels keep a few < 1.5 s). The
   2-4 s target range is an assumption from the challenge text, not a measurement; do not tune it on the public window.
-* Keeper-slot swap (reported by other participants: tracker puts the home keeper's slot on the away keeper in runs) is
-  NOT yet checked on our tracking; a label-free data fix worth trying (Track B).
+* Keeper-slot swap CHECKED (label-free). Keeper slots are 23 (home) and 45 (away). Slot 45 sits >35 m from its own goal
+  for 6,797 frames in half 1 and 9,594 in half 2 (slot 23: 348 / 1,249), in runs of ~1,300-5,700 frames, at the OTHER
+  keeper's end: a phantom away player in the home box, not a pairwise swap. Blanking those frames (NaN) changes only
+  813 of 158,857 graded labels (0.5%, mostly A/H -> D). It cannot be validated (DFL has no such artefact, public window
+  too small), so it is NOT applied; submission unchanged.
