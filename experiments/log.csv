@@ -1,0 +1,4 @@
+date,branch,note,temp,lam_team,lam_dead,min_len,spellF1,macroF1,aliveDeadF1,team_acc,dead_auc,n_pred,n_gt,per_fold_spellF1,seconds
+2026-11-16 22:36,track-c-decoder,"baseline: current main (97 features, depth 5, 250 iter)",0.8,3,12,25,0.4685,0.8581,0.9518,0.8568,0.9892,262,437,0.423;0.411;0.501;0.452;0.482;0.523;0.488,74
+2026-11-16 18:00,track-c-decoder,decoder grid (144 cells) on out-of-fold logits: best 0.470 vs current 0.468 -> params are at the ceiling,0.8,3,12,25,0.4700,0.8580,,,,264,437,,
+2026-11-16 18:00,track-c-decoder,"HSMM duration-aware decoder (durations fitted on other matches), best of 36 cells: temp .8 w_dur .5 w_trans 1 min 25 -> fails the +0.01 gate",0.8,3,12,25,0.4670,0.8570,,,,269,437,,
