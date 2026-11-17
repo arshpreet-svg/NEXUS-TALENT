@@ -60,3 +60,11 @@ possession ("a player keeps the ball for a few seconds"; touches / deflections /
 * Bagging over frame-subsample offsets (3 models per target, offsets 0/1/2 of the every-5th-frame sampling, logits averaged):
   3 s target spellF1 0.638 vs 0.641 single model, raw target identical (0.442). No gain (neighbouring frames are near
   duplicates, so the bag adds no diversity); reverted. Stacking and a different model family are still untested.
+
+* Last-touch features (ball within 1.5 m of a player at a sharp direction/speed change; last toucher's team, time since,
+  touch counts; idea taken from another team's report, own implementation). Nested 7-fold with stage two: 3 s spellF1
+  0.663 vs 0.651 (single-stage alone +0.013), BUT NOT ADOPTED: the touch rate on our real ATD is 0.003 per frame-window
+  vs 0.057 in the degraded DFL training data (~20x lower; our ball is too noisy/missing to show touches), so the model
+  reads "no recent touch" almost everywhere and over-predicts dead ball on our match (D 46.3% -> 49.5%, public-window
+  macroF1 0.899 -> 0.873). The cross-validated gain does not transfer. A fix would need the degradation (or the touch
+  detector's thresholds) calibrated so that the touch rate matches the real ATD, without labels. Submitted file unchanged.
