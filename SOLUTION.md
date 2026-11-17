@@ -150,7 +150,7 @@ H/A runs shorter than a **hold** are merged into their live neighbour (never int
 
 ## Possession rules implemented
 Possession is the team the control model assigns the ball to, held by the decoder until sustained evidence (the
-switch cost and the 1 s minimum run) says otherwise. Loose balls, aerial duels and deflections therefore stay with
+switch cost and the 2 s minimum run) says otherwise. Loose balls, aerial duels and deflections therefore stay with
 the previous team; a hand-over needs several consecutive frames of evidence. Dead ball follows the dead-ball model
 (slow collective movement, ball at or over the edge, ball unseen for long, restart formations). Restarts are not
 handled by a special rule; a possession begins when the decoder leaves a dead stretch.
