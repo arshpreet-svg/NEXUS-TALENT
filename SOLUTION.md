@@ -2,7 +2,7 @@
 
 ## Summary
 Per-frame possession labels (`H` / `A` / `D` / `X`) for the tactical video, produced by a learned
-two-model system plus a sequence decoder that uses **only the automatic tracking (ATD)** of the tactical
+two-stage system plus a sequence decoder that uses **only the automatic tracking (ATD)** of the tactical
 video. The models are trained entirely on **other matches** (seven Bundesliga matches from the public DFL
 open dataset), after degrading that precise tracking so that it looks like ours. No label, correction or
 constant comes from the provided match.
@@ -10,7 +10,7 @@ constant comes from the provided match.
 | | |
 |---|---|
 | Training data | DFL open Bundesliga data, 7 matches (14 halves), CC BY 4.0 |
-| Models | gradient-boosted trees (scikit-learn `HistGradientBoostingClassifier`) |
+| Models | gradient-boosted trees (scikit-learn `HistGradientBoostingClassifier`): per-frame stage one, temporal stage two |
 | Decoder | 3-state Viterbi over H / A / D (smooth: two-second minimum run) |
 | Held-out validation | leave-one-match-out over the 7 matches, scored with the official metric code |
 | Output | 199,319 rows; labels only inside the two published halves, `X` elsewhere |
@@ -31,15 +31,22 @@ constant comes from the provided match.
      on average; features give the ball's progress toward each goal and the height of each team's lines.
    * Most features are also taken at 1 / 3 / 6 / 15 s centred windows.
    All features are symmetric under swapping the two teams (checked by a unit test).
-2. **Dead-ball model** and **team-control model** (`solution/train_dfl.py`, `solution/models.py`): gradient-boosted
-   trees (250 iterations, learning rate 0.06, depth 5, minimum leaf 60, L2 1.0), trained on every fifth frame.
+2. **Stage one: dead-ball model** and **team-control model** (`solution/train_dfl.py`, `solution/models.py`):
+   gradient-boosted trees trained on every fifth frame (dead-ball: 250 iterations, learning rate 0.06, depth 5,
+   minimum leaf 60, L2 1.0; team-control, larger: 800 iterations, learning rate 0.03, depth 8, minimum leaf 200, L2 3.0).
    They output P(dead) and P(home | ball alive) per frame. The team model is trained on each frame in both
    team orientations and its prediction is symmetrised, `½[logit(x) − logit(x with the teams swapped)]`, so it
    has no home bias.
+   **Stage two** (`solution/stack.py`): a second pair of smaller trees re-predicts both quantities from the stage-one
+   logits summarised over ±1, 3, 6 and 15 s (centred, past and future means, slope, extrema) plus nine team-neutral
+   context features (ball visibility, time since / until the ball was seen, player motion). It is team-swap symmetric
+   like stage one and is trained **only on out-of-fold stage-one logits** (each training match scored by a stage-one
+   model that never saw it), with the 3 s controlled-possession labels (see below). It is applied to each half
+   separately so its windows never reach across a half boundary.
 3. **Decoder** (`solution/decode.py`): a 3-state Viterbi over the log-probabilities (emission temperature
    0.4, switch cost 6 for H↔A and 25 to/from D), then runs shorter than 2 s (50 frames) are absorbed by their
    neighbours. This is what turns noisy per-frame evidence into *controlled* possessions: the nearest-player
-   baseline invents 669 possessions, this system produces 216. The strength of this smoothing encodes an
+   baseline invents 669 possessions, this system produces 199. The strength of this smoothing encodes an
    assumption about the target — see "Possession definition" below.
 4. **Scope** (`solution/predict.py`): only the half boundaries published in DATA.md (frames 11185–90651 and
    110808–190197) are labelled; every other frame is `X`. No `X` is written inside a half.
@@ -76,6 +83,7 @@ H/A runs shorter than a **hold** are merged into their live neighbour (never int
 |---|---|---|---|---|
 | mean of 7 held-out matches | 0.593 | **0.641** | 0.645 | 0.442 |
 | previous decoder (0.8 / 3 / 12 / 25) | 0.575 | 0.592 | 0.581 | 0.468 |
+| **submitted: two-stage model, decoder 0.4 / 6 / 25 / 50** | 0.593 | **0.651** | 0.657 | 0.434 |
 
 * The smoother decoder wins on every target of 2 s or coarser and loses 0.026 on the raw touch-level target, which the
   rules text excludes.
@@ -92,25 +100,31 @@ H/A runs shorter than a **hold** are merged into their live neighbour (never int
 
   | mean of 7 held-out matches | 3 s target | raw DFL labels |
   |---|---|---|
-  | spellF1 | 0.641 | 0.442 |
-  | macroF1 | 0.865 | 0.857 |
-  | alive / dead F1 | 0.952 | 0.952 |
-  | dead-ball AUC | 0.989 | 0.989 |
-  | team accuracy on live frames | 0.861 | 0.861 |
-  | predicted vs true possessions per match | 209 vs 233 | 209 vs 437 |
+  | spellF1 | 0.651 | 0.434 |
+  | macroF1 | 0.868 | 0.858 |
+  | alive / dead F1 | 0.953 | 0.953 |
+  | dead-ball AUC | 0.992 | 0.992 |
+  | team accuracy on live frames | 0.870 | 0.870 |
+  | predicted vs true possessions per match | 199 vs 233 | 199 vs 437 |
+
+  The second stage was validated with a nested leave-one-match-out (for each held-out match, stage two is trained on
+  stage-one logits from models that saw neither that match nor the match being scored). Against the single-stage model
+  (3 s target 0.641) it gains 0.010; it is neutral at 2 s, +0.012 at 4 s and −0.008 on the raw target, and 2 of the 7
+  folds were slightly worse, so the gain is modest. Stage two is trained on the 3 s target; training it on 2 s labels
+  gave the same 3 s score (0.651).
 
   Progression of the model (raw-label yardstick, same decoder): base features 0.369 → + team-shape features 0.444 →
   + field-position features about 0.47 spellF1 (each step improved every fold).
-* **Decoder sensitivity**: a 144-cell grid on the 3 s target ranges 0.55–0.64; neighbouring settings
+* **Decoder sensitivity** (single-stage model): a 144-cell grid on the 3 s target ranges 0.55–0.64; neighbouring settings
   (team cost 6–10, dead cost 12–25, run 1–3 s) are within 0.01, so the choice is not sensitive.
 * **Public 5-minute window** — used only to catch alignment / orientation bugs and, early on, to test two
   assumptions (see "Tried and dropped"); no model or parameter was selected on it. For the submitted file:
-  macroF1 0.892, spellF1 0.622, 10 predicted vs 17 true possessions, 81 % of true dead frames recovered
+  macroF1 0.899, spellF1 0.657, 11 predicted vs 17 true possessions
   (floor baseline on the same window: 0.621 / 0.326). With 17 possessions one possession moves spellF1 by about
-  0.06, so this figure ranks nothing (EVALUATION.md). The under-count (10 vs 17) is a warning that the real labels
+  0.06, so this figure ranks nothing (EVALUATION.md). The under-count (11 vs 17) is a warning that the real labels
   keep some very short possessions that this smoother decoder merges.
-* **Full match, no labels needed**: H 53,389 / A 32,802 / D 72,666 graded frames (D = 46 %, in line with real effective
-  playing time and the 44.5 % in the training matches); 216 possessions of mean 16.0 s.
+* **Full match, no labels needed**: H 52,879 / A 32,430 / D 73,548 graded frames (D = 46 %, in line with real effective
+  playing time and the 44.5 % in the training matches); 199 possessions of mean 17.2 s.
 
 ## Assets used and dropped
 * **Used**: tactical ATD (`*_atd.txt`; `*_atd.xml` only to know each track slot's team).
@@ -145,8 +159,8 @@ handled by a special rule; a possession begins when the decoder leaves a dead st
 * **Short possessions are merged away.** In the DFL matches 44 % of possessions last under 3 s (touch-level flips)
   and almost none are recovered; possessions over 15 s are matched 88 % of the time. Our decoder is tuned for a
   controlled-possession target of 2–4 s; if the organisers' labels keep many shorter possessions (the public window
-  has a few under 1.5 s, and we predict 10 of its 17 possessions) this costs recall. On a raw touch-level target the
-  same decoder scores 0.026 lower than the previous one.
+  has a few under 1.5 s, and we predict 11 of its 17 possessions) this costs recall. On a raw touch-level target the
+  same decoder scores lower than the previous one (0.434 vs 0.468).
 * **Team confusion**: home and away are confused on about 13 % of live frames; this is the largest remaining error,
   concentrated in stretches without the ball.
 * **Label-definition gap**: DFL's flags follow the same two-field convention the organisers describe, but we could
@@ -162,8 +176,9 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-solution.txt
 # place the provided bundle in data/ (see DATA.md), then:
 ./make_submission.sh submission.csv      # downloads DFL (verified), trains, predicts, validates
 ```
-* Training takes a few minutes; prediction a few seconds. The pipeline is deterministic: two from-scratch runs
-  (caches and models deleted) gave a byte-identical file (MD5 `6385d9a84b69b4be3e085ab9c22d4b77`). Python 3.15.0,
+* Training takes about 10 minutes (the nested stage-two fits dominate); prediction a few seconds. The CSV is written with
+  `\n` line endings on every OS. The pipeline is deterministic: two from-scratch runs
+  (caches and models deleted) gave a byte-identical file (MD5 `ec1c254b794f7b0cbc14565df02a3927`). Python 3.15.0,
   pinned versions in `requirements-solution.txt`.
 * Validation: `python solution/cv_fast.py --note "..."` (about 30 s with a warm cache). Tests:
   `pip install -r requirements-dev.txt && python -m pytest tests -q`.

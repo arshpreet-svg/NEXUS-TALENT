@@ -38,7 +38,11 @@ def predict(prm=None, use_tags=False, model="dfl"):
     Xf, _ = features.features(P, B, (1 - team).astype(np.int8), segments=HALVES)
     assert names == m["names"]
     if model == "dfl":
-        dl, tl = train_dfl.predict_logits(m, X, Xf)
+        # stage two uses +/-15 s windows: apply it per half so they never reach across a half boundary or the gap
+        dl = np.zeros(len(X), dtype=np.float64); tl = np.zeros(len(X), dtype=np.float64)
+        for lo, hi in HALVES:
+            sl = slice(lo, hi + 1)
+            dl[sl], tl[sl] = train_dfl.predict_logits(m, X[sl], Xf[sl])
     else:
         dl, tl = train.predict_logits(m["dead"], m["team"], X, Xf)
     labels = decode_all(dl, tl, prm)
@@ -57,7 +61,7 @@ if __name__ == "__main__":
                     help="add Smart Tagging team evidence (tried, NOT used in the submission; see SOLUTION.md)")
     a = ap.parse_args()
     lab, _, _ = predict(use_tags=a.tags, model=a.model)
-    with open(a.out, "w") as fh:
+    with open(a.out, "w", newline="\n") as fh:
         fh.write("frame,label\n")
         fh.writelines("{},{}\n".format(i, l) for i, l in enumerate(lab))
     print("wrote", a.out)
