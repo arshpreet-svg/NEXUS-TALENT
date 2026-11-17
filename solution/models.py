@@ -17,9 +17,10 @@ PLAYER_ONLY = ("pspd", "pstill", "nplay")
 LO, HI = 0.25, 0.75                               # blend ramp on window ball visibility
 
 
-def _hgb():
-    return HistGradientBoostingClassifier(max_iter=250, learning_rate=0.06, max_depth=5,
-                                          min_samples_leaf=60, l2_regularization=1.0, random_state=0)
+def _hgb(**hp):
+    kw = dict(max_iter=250, learning_rate=0.06, max_depth=5, min_samples_leaf=60, l2_regularization=1.0,
+              random_state=0)
+    return HistGradientBoostingClassifier(**{**kw, **hp})
 
 
 class DeadModel:
@@ -52,8 +53,11 @@ class DeadModel:
 class Plain:
     """Single gradient-boosted classifier with a logit() interface (used when labels are unbiased)."""
 
+    def __init__(self, hp=None):
+        self.hp = hp or {}
+
     def fit(self, X, y, names=None):
-        self.model = _hgb().fit(X, y)
+        self.model = _hgb(**self.hp).fit(X, y)
         return self
 
     def logit(self, X):

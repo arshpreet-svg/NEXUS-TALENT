@@ -20,3 +20,31 @@ date,branch,note,temp,lam_team,lam_dead,min_len,spellF1,macroF1,aliveDeadF1,team
 2026-11-16 23:18,hold-labels,hold robustness matrix [train hold 4.0s | eval hold 0.0s],0.8,3,12,25,0.4010,0.8472,0.9519,0.8422,0.9892,217,437,0.395;0.338;0.410;0.385;0.411;0.443;0.424,35
 2026-11-16 23:29,hold-labels,"NEW DEFAULT: decoder 0.4/6/25/50, train on raw labels; primary target = 3 s controlled possession [train hold 0.0s | eval hold 0.0s]",0.4,6,25,50,0.4418,0.8569,0.9517,0.8568,0.9892,209,437,0.405;0.383;0.439;0.431;0.466;0.507;0.462,
 2026-11-16 23:29,hold-labels,"NEW DEFAULT: decoder 0.4/6/25/50, train on raw labels; primary target = 3 s controlled possession [train hold 0.0s | eval hold 3.0s]",0.4,6,25,50,0.6407,0.8654,0.9517,0.8610,0.9892,209,233,0.693;0.553;0.663;0.599;0.684;0.660;0.634,30
+2026-11-17 00:32,track-a-model,track A: baseline reproduction on Windows/py3.14,0.8,3,12,25,0.4685,0.8581,0.9518,0.8568,0.9892,262,437,0.423;0.411;0.501;0.452;0.482;0.523;0.488,159
+2026-11-17 02:25,track-a-model,track A: stage-2 stack (default s2 hp) on baseline stage 1,0.8,3,12,25,0.4754,0.8623,0.9539,0.8606,0.9914,251,437,0.412;0.432;0.492;0.460;0.474;0.539;0.519,379
+date,branch,note,temp,lam_team,lam_dead,min_len,spellF1,macroF1,aliveDeadF1,team_acc,dead_auc,n_pred,n_gt,per_fold_spellF1,seconds
+2026-11-16 22:36,track-c-decoder,"baseline: current main (97 features, depth 5, 250 iter)",0.8,3,12,25,0.4685,0.8581,0.9518,0.8568,0.9892,262,437,0.423;0.411;0.501;0.452;0.482;0.523;0.488,74
+2026-11-16 18:00,track-c-decoder,decoder grid (144 cells) on out-of-fold logits: best 0.470 vs current 0.468 -> params are at the ceiling,0.8,3,12,25,0.4700,0.8580,,,,264,437,,
+2026-11-16 18:00,track-c-decoder,"HSMM duration-aware decoder (durations fitted on other matches), best of 36 cells: temp .8 w_dur .5 w_trans 1 min 25 -> fails the +0.01 gate",0.8,3,12,25,0.4670,0.8570,,,,269,437,,
+2026-11-17 00:32,track-a-model,track A: baseline reproduction on Windows/py3.14,0.8,3,12,25,0.4685,0.8581,0.9518,0.8568,0.9892,262,437,0.423;0.411;0.501;0.452;0.482;0.523;0.488,159
+2026-11-17 02:25,track-a-model,track A: stage-2 stack (default s2 hp) on baseline stage 1,0.8,3,12,25,0.4754,0.8623,0.9539,0.8606,0.9914,251,437,0.412;0.432;0.492;0.460;0.474;0.539;0.519,379
+2026-11-17 02:30,track-a-model,A1 team model bigger: depth7 iter500 lr.05 leaf100,0.8,3,12,25,0.4716,0.8589,0.9520,0.8601,0.9892,268,437,0.424;0.412;0.493;0.465;0.478;0.550;0.479,123
+2026-11-17 02:33,track-a-model,A2 team model big+reg: depth8 iter800 lr.03 leaf200 l2 3,0.8,3,12,25,0.4720,0.8595,0.9521,0.8600,0.9892,270,437,0.430;0.412;0.502;0.463;0.464;0.544;0.489,163
+2026-11-17 02:34,track-a-model,A3 = A1 + dead depth4 iter300,0.8,3,12,25,0.4704,0.8588,0.9519,0.8601,0.9889,268,437,0.427;0.411;0.495;0.462;0.478;0.546;0.474,93
+2026-11-17 02:36,track-a-model,A4 team model smaller: depth4 iter400 leaf200,0.8,3,12,25,0.4632,0.8578,0.9521,0.8559,0.9892,256,437,0.429;0.397;0.487;0.450;0.471;0.517;0.492,67
+2026-11-17 02:38,track-a-model,A5 denser sampling SUB=2,0.8,3,12,25,0.4627,0.8569,0.9517,0.8557,0.9891,261,437,0.432;0.409;0.482;0.441;0.466;0.524;0.486,129
+2026-11-17 02:42,track-a-model,"A6 ensemble of 3 degradation seeds (0,2,3)",0.8,3,12,25,0.4625,0.8599,0.9540,0.8578,0.9901,253,437,0.422;0.408;0.474;0.446;0.484;0.524;0.479,240
+2026-11-17 02:49,track-a-model,S1 stack+context on baseline stage 1,0.8,3,12,25,0.4757,0.8628,0.9546,0.8610,0.9917,251,437,0.408;0.427;0.500;0.468;0.475;0.532;0.520,382
+2026-11-17 03:04,track-a-model,S2 stack+context on A2 stage 1,0.8,3,12,25,0.4881,0.8641,0.9541,0.8646,0.9917,259,437,0.432;0.442;0.499;0.476;0.489;0.551;0.528,851
+2026-11-17 03:46,track-a-model,"R1 A2 + stack+context, new decoder, rebased on hold-study main [train hold 0.0s | eval hold 3.0s]",0.4,6,25,50,0.6464,0.8680,0.9525,0.8660,0.9917,218,233,0.690;0.605;0.656;0.620;0.657;0.654;0.643,941
+2026-11-17 03:46,track-a-model,"R1 A2 + stack+context, new decoder, rebased on hold-study main [train hold 0.0s | eval hold 2.0s]",0.4,6,25,50,0.6068,0.8669,0.9525,0.8688,0.9917,218,281,0.614;0.578;0.596;0.590;0.643;0.617;0.609,948
+2026-11-17 03:47,track-a-model,"R1 A2 + stack+context, new decoder, rebased on hold-study main [train hold 0.0s | eval hold 4.0s]",0.4,6,25,50,0.6393,0.8655,0.9525,0.8609,0.9917,218,205,0.683;0.598;0.655;0.612;0.652;0.646;0.630,955
+2026-11-17 03:47,track-a-model,"R1 A2 + stack+context, new decoder, rebased on hold-study main [train hold 0.0s | eval hold 0.0s]",0.4,6,25,50,0.4614,0.8613,0.9525,0.8646,0.9917,218,437,0.407;0.413;0.458;0.459;0.474;0.522;0.497,962
+2026-11-17 03:49,track-a-model,R2 A2 + stack trained on 3s-hold labels [train hold 0.0s | eval hold 3.0s],0.4,6,25,50,0.6511,0.8683,0.9533,0.8699,0.9917,199,233,0.698;0.578;0.662;0.624;0.673;0.667;0.655,56
+2026-11-17 03:50,track-a-model,R2 A2 + stack trained on 3s-hold labels [train hold 0.0s | eval hold 2.0s],0.4,6,25,50,0.5933,0.8652,0.9533,0.8686,0.9917,199,281,0.624;0.539;0.570;0.573;0.635;0.622;0.591,63
+2026-11-17 03:50,track-a-model,R2 A2 + stack trained on 3s-hold labels [train hold 0.0s | eval hold 4.0s],0.4,6,25,50,0.6572,0.8673,0.9533,0.8674,0.9917,199,205,0.697;0.588;0.686;0.628;0.673;0.674;0.654,71
+2026-11-17 03:50,track-a-model,R2 A2 + stack trained on 3s-hold labels [train hold 0.0s | eval hold 0.0s],0.4,6,25,50,0.4336,0.8579,0.9533,0.8600,0.9917,199,437,0.401;0.373;0.420;0.425;0.452;0.493;0.471,78
+2026-11-17 03:51,track-a-model,R2 A2 + stack trained on 2s-hold labels [train hold 0.0s | eval hold 3.0s],0.4,6,25,50,0.6510,0.8691,0.9531,0.8697,0.9917,208,233,0.690;0.602;0.669;0.612;0.677;0.653;0.654,55
+2026-11-17 03:51,track-a-model,R2 A2 + stack trained on 2s-hold labels [train hold 0.0s | eval hold 2.0s],0.4,6,25,50,0.5985,0.8667,0.9531,0.8704,0.9917,208,281,0.616;0.560;0.586;0.567;0.654;0.609;0.596,63
+2026-11-17 03:51,track-a-model,R2 A2 + stack trained on 2s-hold labels [train hold 0.0s | eval hold 4.0s],0.4,6,25,50,0.6523,0.8675,0.9531,0.8657,0.9917,208,205,0.685;0.597;0.677;0.615;0.683;0.660;0.649,70
+2026-11-17 03:51,track-a-model,R2 A2 + stack trained on 2s-hold labels [train hold 0.0s | eval hold 0.0s],0.4,6,25,50,0.4459,0.8604,0.9531,0.8635,0.9917,208,437,0.403;0.396;0.439;0.437;0.473;0.498;0.476,78

@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import data, decode, dfl, features  # noqa: E402
+import data, decode, dfl, features, stack  # noqa: E402
 from models import Plain  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,6 +20,12 @@ import possession_metrics as pm  # noqa: E402
 
 MODEL_PATH = os.path.join(ROOT, "models", "gbm_dfl.joblib")
 SUB = 5
+# Team-control model capacity (Track A, experiments/log.csv "A2"): deeper, more, slower, more regularised trees.
+# The dead-ball model keeps the default capacity (more did not help).
+# The second stage learns the controlled-possession target directly: its training labels have H/A runs shorter than
+# 3 s merged into their live neighbour (dfl.apply_hold, the team's primary validation target). Stage one stays on raw labels.
+STAGE2_HOLD_S = 3.0
+TEAM_HP = dict(max_depth=8, max_iter=800, learning_rate=0.03, min_samples_leaf=200, l2_regularization=3.0)
 JIT_BALL, JIT_PLAYER = 0.8, 0.3
 HALVES = [(11185, 90651), (110808, 190197)]
 
@@ -68,13 +74,39 @@ def fit(parts):
         yf = np.where(y == 0, 1, np.where(y == 1, 0, y))            # team-swapped copy
         Xt.append(Xf[idx][live]); yt.append((yf[live] == 0).astype(int))
     md = Plain().fit(np.concatenate(Xd), np.concatenate(yd))
-    mt = Plain().fit(np.concatenate(Xt), np.concatenate(yt))
+    mt = Plain(TEAM_HP).fit(np.concatenate(Xt), np.concatenate(yt))
     return md, mt, names
 
 
 def logits(md, mt, X, Xf):
     dl = md.logit(X)
     tl = 0.5 * (mt.logit(X) - mt.logit(Xf))
+    return dl, tl
+
+
+def fit_all(parts, oof_parts, match_of_part, n_jobs=7):
+    """First stage on all matches, plus the second stage (solution/stack.py) trained on out-of-fold first-stage
+    logits: each match is scored by a first-stage model fitted on the other matches only.
+    parts / oof_parts: make() output at the training / an independent degradation seed, same sequence order."""
+    from joblib import Parallel, delayed
+    order = sorted(set(match_of_part))
+
+    def oof(m):
+        md, mt, _ = fit([p for p, mm in zip(parts, match_of_part) if mm != m])
+        return [logits(md, mt, X, Xf) + (lab, stack.context(X, nm))
+                for (X, Xf, lab, nm), mm in zip(oof_parts, match_of_part) if mm == m]
+    res = Parallel(n_jobs=n_jobs)(delayed(oof)(m) for m in order)
+    md, mt, names = fit(parts)
+    h = int(round(STAGE2_HOLD_S * 25))
+    s2 = stack.Stage2().fit([(dl, tl, dfl.apply_hold(lab, h), C) for r in res for dl, tl, lab, C in r])
+    return {"dead": md, "team": mt, "stage2": s2, "names": names}
+
+
+def predict_logits(model, X, Xf):
+    """Final dead-ball and team logits for a feature matrix (second stage applied when the model has one)."""
+    dl, tl = logits(model["dead"], model["team"], X, Xf)
+    if model.get("stage2") is not None:
+        dl, tl = model["stage2"].predict(dl, tl, stack.context(X, model["names"]))
     return dl, tl
 
 
@@ -128,7 +160,7 @@ if __name__ == "__main__":
         for r in rows[:10]:
             print("%.3f %.3f %.0f %.0f | %s %s %s %s" % r)
     else:
-        md, mt, names = fit(make(seqs, 0, mask))
+        model = fit_all(make(seqs, 0, mask), make(seqs, 1, mask), [q["match"] for q in seqs])
         os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
-        joblib.dump({"dead": md, "team": mt, "names": names}, MODEL_PATH)
+        joblib.dump(model, MODEL_PATH)
         print("saved", MODEL_PATH)
